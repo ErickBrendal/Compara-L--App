@@ -35,122 +35,7 @@ try {
   console.log('⚠️ Usando sistema demo:', error.message);
   isUsingDemo = true;
   
-  // Importar sistema demo
-  if (typeof window !== 'undefined') {
-    import('./firebase-demo').then(firebaseDemo => {
-      db = firebaseDemo.db;
-    });
-  } else {
-    // Para ambiente servidor
-    const firebaseDemo = require('./firebase-demo');
-    db = firebaseDemo.db;
-  }
-}
-
-// Sistema demo inline para garantir funcionamento
-const demoData = {
-  suppliers: [
-    {
-      id: 'sup1',
-      name: "Atacadão",
-      website: "https://www.atacadao.com.br",
-      rating: 4.2,
-      deliveryTime: "2-5 dias úteis",
-      paymentTerms: ["À vista", "28 dias"]
-    },
-    {
-      id: 'sup2',
-      name: "Assaí Atacadista", 
-      website: "https://www.assai.com.br",
-      rating: 4.1,
-      deliveryTime: "1-3 dias úteis",
-      paymentTerms: ["À vista", "21 dias"]
-    },
-    {
-      id: 'sup3',
-      name: "Amazon Brasil",
-      website: "https://www.amazon.com.br", 
-      rating: 4.3,
-      deliveryTime: "1-2 dias úteis",
-      paymentTerms: ["À vista", "Cartão"]
-    }
-  ],
-  products: [
-    {
-      id: 'prod1',
-      name: "Arroz Tio João Tipo 1 5kg",
-      brand: "Tio João",
-      category: "Alimentos",
-      supplierId: 'sup1',
-      supplierName: "Atacadão",
-      wholesalePrice: 22.90,
-      stock: 500,
-      minQuantity: 10,
-      unit: "pct",
-      productUrl: "https://www.atacadao.com.br/busca?q=arroz+tio+joao",
-      imageUrl: "https://via.placeholder.com/200x200/f0f0f0/666666?text=Arroz"
-    },
-    {
-      id: 'prod2',
-      name: "Arroz Tio João Tipo 1 5kg",
-      brand: "Tio João", 
-      category: "Alimentos",
-      supplierId: 'sup2',
-      supplierName: "Assaí Atacadista",
-      wholesalePrice: 21.50,
-      stock: 800,
-      minQuantity: 12,
-      unit: "pct",
-      productUrl: "https://www.assai.com.br/busca?q=arroz+tio+joao",
-      imageUrl: "https://via.placeholder.com/200x200/f0f0f0/666666?text=Arroz"
-    },
-    {
-      id: 'prod3',
-      name: "Smartphone Samsung Galaxy A14 128GB",
-      brand: "Samsung",
-      category: "Eletrônicos", 
-      supplierId: 'sup3',
-      supplierName: "Amazon Brasil",
-      wholesalePrice: 899.00,
-      stock: 50,
-      minQuantity: 1,
-      unit: "un",
-      productUrl: "https://www.amazon.com.br/s?k=samsung+galaxy+a14",
-      imageUrl: "https://via.placeholder.com/200x200/f0f0f0/666666?text=Samsung"
-    },
-    {
-      id: 'prod4',
-      name: "Detergente Ypê Neutro 500ml",
-      brand: "Ypê",
-      category: "Limpeza",
-      supplierId: 'sup1', 
-      supplierName: "Atacadão",
-      wholesalePrice: 2.80,
-      stock: 800,
-      minQuantity: 24,
-      unit: "un",
-      productUrl: "https://www.atacadao.com.br/busca?q=detergente+ype",
-      imageUrl: "https://via.placeholder.com/200x200/f0f0f0/666666?text=Detergente"
-    },
-    {
-      id: 'prod5',
-      name: "Feijão Carioca Camil 1kg",
-      brand: "Camil",
-      category: "Alimentos",
-      supplierId: 'sup2',
-      supplierName: "Assaí Atacadista", 
-      wholesalePrice: 8.50,
-      stock: 900,
-      minQuantity: 24,
-      unit: "pct",
-      productUrl: "https://www.assai.com.br/busca?q=feijao+camil",
-      imageUrl: "https://via.placeholder.com/200x200/f0f0f0/666666?text=Feijão"
-    }
-  ]
-};
-
-// DB demo inline
-if (!db) {
+  // DB demo inline
   db = {
     collection: (name) => ({
       name,
@@ -163,41 +48,142 @@ if (!db) {
   };
 }
 
-// Funções de busca
+// Função para buscar produtos (simular busca no Firestore) - ESTILO BUSCAPÉ
 export const searchProducts = async (searchTerm) => {
   console.log(`🔍 Buscando produtos para: "${searchTerm}"`);
   
-  const normalizedTerm = searchTerm.toLowerCase();
-  const matchingProducts = demoData.products.filter(product => 
-    product.name.toLowerCase().includes(normalizedTerm) ||
-    product.brand.toLowerCase().includes(normalizedTerm) ||
-    product.category.toLowerCase().includes(normalizedTerm) ||
-    product.supplierName.toLowerCase().includes(normalizedTerm)
-  );
+  // Usar a mesma lógica da API para gerar produtos com múltiplos fornecedores
+  const products = generateBuscapeStyleProducts(searchTerm);
   
-  // Enriquecer com dados do fornecedor
-  const enrichedProducts = matchingProducts.map(product => {
-    const supplier = demoData.suppliers.find(s => s.id === product.supplierId);
-    return {
-      ...product,
-      supplier: supplier || {
-        name: product.supplierName,
-        rating: 4.0,
-        deliveryTime: "3-5 dias úteis"
-      },
-      price: product.wholesalePrice,
-      image: product.imageUrl,
-      delivery: supplier?.deliveryTime || "3-5 dias úteis",
-      rating: supplier?.rating || 4.0
-    };
-  });
-  
-  console.log(`✅ Encontrados ${enrichedProducts.length} produtos`);
-  return enrichedProducts;
+  console.log(`✅ Encontrados ${products.length} produtos de ${new Set(products.map(p => p.supplier.name)).size} fornecedores diferentes`);
+  return products;
 };
 
+// Gerar produtos estilo Buscapé com múltiplos fornecedores
+function generateBuscapeStyleProducts(searchQuery) {
+  const products = [];
+  const normalizedQuery = searchQuery.toLowerCase();
+  
+  // Base de produtos por categoria (mesmo da API)
+  const productDatabase = {
+    'arroz': [
+      { name: 'Arroz Tio João Tipo 1 5kg', brand: 'Tio João', basePrice: 22.90, category: 'Alimentos', unit: 'pct', minQuantity: 10 },
+      { name: 'Arroz Camil Tipo 1 5kg', brand: 'Camil', basePrice: 21.50, category: 'Alimentos', unit: 'pct', minQuantity: 12 },
+      { name: 'Arroz União Premium 5kg', brand: 'União', basePrice: 24.90, category: 'Alimentos', unit: 'pct', minQuantity: 8 }
+    ],
+    'feijao': [
+      { name: 'Feijão Carioca Camil 1kg', brand: 'Camil', basePrice: 8.50, category: 'Alimentos', unit: 'pct', minQuantity: 24 },
+      { name: 'Feijão Preto Tio João 1kg', brand: 'Tio João', basePrice: 9.20, category: 'Alimentos', unit: 'pct', minQuantity: 20 },
+      { name: 'Feijão Mulatinho Kicaldo 1kg', brand: 'Kicaldo', basePrice: 7.80, category: 'Alimentos', unit: 'pct', minQuantity: 30 }
+    ],
+    'detergente': [
+      { name: 'Detergente Ypê Neutro 500ml', brand: 'Ypê', basePrice: 2.80, category: 'Limpeza', unit: 'un', minQuantity: 24 },
+      { name: 'Detergente Minuano Limão 500ml', brand: 'Minuano', basePrice: 2.60, category: 'Limpeza', unit: 'un', minQuantity: 30 },
+      { name: 'Detergente Limpol Maçã 500ml', brand: 'Limpol', basePrice: 2.90, category: 'Limpeza', unit: 'un', minQuantity: 20 }
+    ],
+    'smartphone': [
+      { name: 'Smartphone Samsung Galaxy A14 128GB', brand: 'Samsung', basePrice: 899.00, category: 'Eletrônicos', unit: 'un', minQuantity: 1 },
+      { name: 'Smartphone Motorola Moto G23 128GB', brand: 'Motorola', basePrice: 749.00, category: 'Eletrônicos', unit: 'un', minQuantity: 1 },
+      { name: 'Smartphone Xiaomi Redmi Note 12 128GB', brand: 'Xiaomi', basePrice: 999.00, category: 'Eletrônicos', unit: 'un', minQuantity: 1 }
+    ],
+    'oleo': [
+      { name: 'Óleo de Soja Soya 900ml', brand: 'Soya', basePrice: 4.20, category: 'Alimentos', unit: 'un', minQuantity: 24 },
+      { name: 'Óleo de Girassol Liza 900ml', brand: 'Liza', basePrice: 5.50, category: 'Alimentos', unit: 'un', minQuantity: 20 }
+    ],
+    'sabao': [
+      { name: 'Sabão em Pó Omo 1kg', brand: 'Omo', basePrice: 12.50, category: 'Limpeza', unit: 'un', minQuantity: 12 },
+      { name: 'Sabão em Pó Ariel 1kg', brand: 'Ariel', basePrice: 13.20, category: 'Limpeza', unit: 'un', minQuantity: 10 }
+    ],
+    'fone': [
+      { name: 'Fone JBL Tune 510BT Bluetooth', brand: 'JBL', basePrice: 199.00, category: 'Eletrônicos', unit: 'un', minQuantity: 1 },
+      { name: 'Fone Sony WH-CH720N Bluetooth', brand: 'Sony', basePrice: 299.00, category: 'Eletrônicos', unit: 'un', minQuantity: 1 }
+    ]
+  };
+
+  // Fornecedores com características diferentes
+  const suppliers = [
+    { name: 'Atacadão', rating: 4.2, deliveryTime: '2-5 dias úteis', priceMultiplier: 1.0, website: 'https://www.atacadao.com.br' },
+    { name: 'Assaí Atacadista', rating: 4.1, deliveryTime: '1-3 dias úteis', priceMultiplier: 0.95, website: 'https://www.assai.com.br' },
+    { name: 'Makro', rating: 4.0, deliveryTime: '2-4 dias úteis', priceMultiplier: 1.05, website: 'https://www.makro.com.br' },
+    { name: 'Amazon Brasil', rating: 4.3, deliveryTime: '1-2 dias úteis', priceMultiplier: 1.15, website: 'https://www.amazon.com.br' },
+    { name: 'Mercado Livre', rating: 4.0, deliveryTime: '2-7 dias úteis', priceMultiplier: 1.08, website: 'https://www.mercadolivre.com.br' },
+    { name: 'Magazine Luiza', rating: 3.9, deliveryTime: '3-6 dias úteis', priceMultiplier: 1.12, website: 'https://www.magazineluiza.com.br' }
+  ];
+
+  // Encontrar produtos que correspondem à busca
+  let matchingProducts = [];
+  for (const [key, productList] of Object.entries(productDatabase)) {
+    if (normalizedQuery.includes(key) || key.includes(normalizedQuery)) {
+      matchingProducts = [...matchingProducts, ...productList];
+    }
+  }
+
+  // Se não encontrou, gerar produtos genéricos
+  if (matchingProducts.length === 0) {
+    matchingProducts = [
+      { name: `${searchQuery} - Produto Premium`, brand: 'Marca A', basePrice: Math.floor(Math.random() * 200) + 50, category: 'Geral', unit: 'un', minQuantity: 1 },
+      { name: `${searchQuery} - Produto Econômico`, brand: 'Marca B', basePrice: Math.floor(Math.random() * 150) + 30, category: 'Geral', unit: 'un', minQuantity: 1 }
+    ];
+  }
+
+  // Para cada produto, criar ofertas de múltiplos fornecedores
+  matchingProducts.forEach((baseProduct, productIndex) => {
+    // Selecionar 3-6 fornecedores aleatoriamente
+    const numSuppliers = Math.min(suppliers.length, Math.max(3, Math.floor(Math.random() * 4) + 3));
+    const selectedSuppliers = suppliers.slice(0, numSuppliers);
+
+    selectedSuppliers.forEach((supplier, supplierIndex) => {
+      const basePrice = baseProduct.basePrice * supplier.priceMultiplier;
+      const finalPrice = Math.round(basePrice * (0.9 + Math.random() * 0.2) * 100) / 100;
+      
+      products.push({
+        id: `${productIndex}-${supplierIndex}`,
+        name: baseProduct.name,
+        brand: baseProduct.brand,
+        category: baseProduct.category,
+        supplier: {
+          id: `sup-${supplierIndex}`,
+          name: supplier.name,
+          rating: supplier.rating + (Math.random() * 0.4 - 0.2),
+          deliveryTime: supplier.deliveryTime,
+          website: supplier.website,
+          paymentTerms: ['À vista', '30 dias', 'Cartão']
+        },
+        price: finalPrice,
+        wholesalePrice: finalPrice,
+        image: `https://via.placeholder.com/200x200/f0f0f0/666666?text=${encodeURIComponent(baseProduct.name.split(' ')[0])}`,
+        delivery: supplier.deliveryTime,
+        rating: supplier.rating,
+        stock: Math.floor(Math.random() * 500) + 50,
+        minQuantity: baseProduct.minQuantity,
+        productUrl: generateProductUrl(supplier.name, baseProduct.name),
+        unit: baseProduct.unit
+      });
+    });
+  });
+
+  // Ordenar por preço (mais barato primeiro)
+  return products.sort((a, b) => a.price - b.price);
+}
+
+function generateProductUrl(supplierName, productName) {
+  const baseUrls = {
+    "Atacadão": "https://www.atacadao.com.br/busca?q=",
+    "Assaí Atacadista": "https://www.assai.com.br/busca?q=",
+    "Makro": "https://www.makro.com.br/busca?q=",
+    "Amazon Brasil": "https://www.amazon.com.br/s?k=",
+    "Mercado Livre": "https://lista.mercadolivre.com.br/",
+    "Magazine Luiza": "https://www.magazineluiza.com.br/busca/"
+  };
+
+  const baseUrl = baseUrls[supplierName] || "#";
+  const searchTerm = encodeURIComponent(productName.toLowerCase());
+  
+  return `${baseUrl}${searchTerm}`;
+}
+
 export const getSupplierById = async (supplierId) => {
-  return demoData.suppliers.find(s => s.id === supplierId) || null;
+  return null; // Não usado no sistema demo
 };
 
 // Exportar db e status
@@ -218,8 +204,8 @@ export const writeBatch = () => ({
   commit: async () => ({}) 
 });
 
-console.log('🚀 Sistema de dados inicializado:', {
+console.log('🚀 Sistema de dados inicializado (Estilo Buscapé):', {
   demo: isUsingDemo,
-  products: demoData.products.length,
-  suppliers: demoData.suppliers.length
+  fornecedores: 6,
+  categorias: 'Alimentos, Limpeza, Eletrônicos'
 });
