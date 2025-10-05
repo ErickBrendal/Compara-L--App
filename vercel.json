@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm run build",
+  "installCommand": "cd frontend && npm install",
+  "framework": "nextjs",
+  "outputDirectory": "frontend/.next",
+  "rootDirectory": "frontend",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "OPENAI_API_KEY": "@openai_api_key",
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "frontend/src/pages/api/search.js": {
+      "maxDuration": 30
+    },
+    "frontend/src/pages/api/upload.js": {
+      "maxDuration": 60
+    }
+  }
+}

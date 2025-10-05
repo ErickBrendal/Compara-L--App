@@ -14,7 +14,11 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "axios": "^1.6.0",
-    "recharts": "^2.10.0"
+    "recharts": "^2.10.0",
+    "openai": "^4.20.0",
+    "formidable": "^3.5.1",
+    "csv-parser": "^3.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.16",
